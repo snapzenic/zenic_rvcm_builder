@@ -165,10 +165,9 @@ wait
 rm -rf temp/tmp.*
 if [ -z "$(ls -A1 "${BUILD_DIR}")" ]; then abort "All builds failed."; fi
 
-log "\n📥 Install [MicroG](https://github.com/inotia00/VancedMicroG/releases)"
-log "\n🛡️ Use [Zygisk Detach](https://github.com/ReVanced-Mirror/zygisk-detach)"
+log "\n📥 Install [MicroG](https://github.com/inotia00/VancedMicroG/releases) for non-root YouTube and YT Music APKs"
+log "\n🛡️ Use [Zygisk Detach](https://github.com/ReVanced-Mirror/zygisk-detach) to detach root ReVanced YouTube and YT Music from Play Store"
 log "\n🔗 [Zenic RVCM Builder](https://github.com/snapzenic/zenic_rvcm_builder)"
-log "\n📝 Changelog:"
 log "$(cat "$TEMP_DIR"/*-rv/changelog.md)"
 
 SKIPPED=$(cat "$TEMP_DIR"/skipped 2>/dev/null || :)
