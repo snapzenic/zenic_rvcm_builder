@@ -63,7 +63,7 @@ jobs:
       - name: Get date
         id: get_date
         run: |
-          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "date=$(TZ=Europe/Istanbul date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
 
       - name: Upload modules to release
         uses: svenstaro/upload-release-action@2.11.2
@@ -108,13 +108,13 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v6.0.1
         with:
           branch: update
-          skip_checkout: true
           file_pattern: build.md *-update.json
           commit_message: Bump version ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}
 
-      - name: Report to Telegram
+      - name: Send to Telegram
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          RELEASE_DATE: ${{ steps.get_date.outputs.date }}
         if: env.TG_TOKEN != null
         run: |
           cd build || { echo "build folder not found"; exit 1; }
@@ -135,15 +135,16 @@ jobs:
           APKS=${APKS#"$NL"}
 
           BODY="$(sed 's/^\* \*\*/↪ \*\*/g; s/^\* `/↪ \*\*/g; s/`/\*/g; s/^\* /\↪/g; s/\*\*/\*/g; s/###//g; s/^- /↪ /g; /^==/d;' ../build.md)"
-          MSG="*New build!*
+          MSG="🆕 *New Zenic ReVanced Build - $RELEASE_DATE*
 
           ${BODY}
 
-          *▼ Download Links:*
-          Modules:
+          *📥▼ Download Links:*
+          
+          📦 Modules:
           ${MODULES}
 
-          APKs:
+          📱 APKs:
           ${APKS}
           "
           echo "'$MSG'"
