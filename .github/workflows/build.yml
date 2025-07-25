@@ -61,12 +61,12 @@ jobs:
           cp -f build.md build.tmp
 
       - name: Upload modules to release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@v2.11.2
         with:
           body: ${{ steps.get_output.outputs.BUILD_LOG }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./build/*
-          release_name: "ReVanced $(date +'%Y-%m-%d')"
+          release_name: ReVanced $(date +'%Y-%m-%d')
           tag: ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}
           file_glob: true
           overwrite: true
@@ -100,7 +100,7 @@ jobs:
 
           find . -name "*-update.json" | grep . || : >dummy-update.json
 
-      - uses: stefanzweifel/git-auto-commit-action@v5
+      - uses: stefanzweifel/git-auto-commit-action@v6.0.1
         with:
           branch: update
           skip_checkout: true
@@ -114,7 +114,7 @@ jobs:
         run: |
           cd build || { echo "build folder not found"; exit 1; }
 
-          TG_CHAT="@rvc_magisk"
+          TG_CHAT="@zenicrvreminder"
           NL=$'\n'
           APKS=""
           MODULES=""
