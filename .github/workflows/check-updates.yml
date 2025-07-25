@@ -1,0 +1,81 @@
+name: Check Updates
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 16 * * *"  # Her gün saat 19:00 (UTC+3)
+
+jobs:
+  check:
+    permissions: write-all
+    runs-on: ubuntu-latest
+
+    outputs:
+      SHOULD_BUILD: ${{ steps.should_build.outputs.SHOULD_BUILD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Check for YouTube/YT Music updates and patch updates
+        id: should_build
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHOULD_BUILD=0
+
+          # Play Store sürüm kontrolü
+          mkdir -p .cache
+          [ -f .cache/last_versions.txt ] || echo "none none" > .cache/last_versions.txt
+          read LAST_YT LAST_YTM < .cache/last_versions.txt
+
+          YT_VER=$(curl -sL "https://play.google.com/store/apps/details?id=com.google.android.youtube" | grep -oP 'Current Version.*?<span[^>]*>\K[^<]+' || echo "unknown")
+          YTM_VER=$(curl -sL "https://play.google.com/store/apps/details?id=com.google.android.apps.youtube.music" | grep -oP 'Current Version.*?<span[^>]*>\K[^<]+' || echo "unknown")
+
+          echo "YT: $LAST_YT -> $YT_VER"
+          echo "YTM: $LAST_YTM -> $YTM_VER"
+
+          if [[ "$YT_VER" != "$LAST_YT" || "$YTM_VER" != "$LAST_YTM" ]]; then
+            echo "App update detected"
+            echo "$YT_VER $YTM_VER" > .cache/last_versions.txt
+            SHOULD_BUILD=1
+          fi
+
+          # Patch/config güncelleme kontrolü
+          if ! git checkout origin/update build.md; then
+            echo "First time build!"
+            SHOULD_BUILD=1
+          else
+            UPDATE_CFG=$(./build.sh config.toml --config-update)
+            if [ "$UPDATE_CFG" ]; then
+              echo "Patch/config update detected"
+              SHOULD_BUILD=1
+            fi
+          fi
+
+          echo "SHOULD_BUILD=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+
+      - name: Commit version cache if needed
+        if: steps.should_build.outputs.SHOULD_BUILD == '1'
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+          git add .cache/last_versions.txt
+          git commit -m "Update last checked YouTube app versions"
+          git push
+
+      - name: Clear older runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list -L400 --json databaseId -q '.[].databaseId' | tail -n+10 | xargs -IID gh api "repos/$GITHUB_REPOSITORY/actions/runs/ID" -X DELETE || :
+
+  build:
+    permissions: write-all
+    needs: check
+    if: ${{ needs.check.outputs.SHOULD_BUILD == '1' }}
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
