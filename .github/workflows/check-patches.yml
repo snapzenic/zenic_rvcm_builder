@@ -53,6 +53,11 @@ jobs:
           git commit -m "Update last checked YouTube app versions"
           git push
 
+      - name: Get date
+        id: get_date
+        run: |
+          echo "date=$(TZ=Europe/Istanbul date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
+
       - name: Send Telegram notification
         if: always()
         env:
@@ -68,7 +73,7 @@ jobs:
               MESSAGE="✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared. Latest version: $UPDATE_VERSION"
             fi
           else
-            MESSAGE="❌ No new updates, ReVanced patches are up to date."
+            MESSAGE="❌ No new updates, ReVanced patches are up to date.\n 🕛 Checked at: ${{ steps.get_date.outputs.date }}"
           fi
 
           curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
