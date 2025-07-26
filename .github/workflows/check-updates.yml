@@ -3,7 +3,7 @@ name: Check Updates
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 16 * * *"  # Her gün saat 19:00 (UTC+3)
+    - cron: "0 */1 * * *"
 
 jobs:
   check:
@@ -32,8 +32,8 @@ jobs:
           [ -f .cache/last_versions.txt ] || echo "none none" > .cache/last_versions.txt
           read LAST_YT LAST_YTM < .cache/last_versions.txt
 
-          YT_VER=$(curl -sL "https://play.google.com/store/apps/details?id=com.google.android.youtube" | grep -oP 'Current Version.*?<span[^>]*>\K[^<]+' || echo "unknown")
-          YTM_VER=$(curl -sL "https://play.google.com/store/apps/details?id=com.google.android.apps.youtube.music" | grep -oP 'Current Version.*?<span[^>]*>\K[^<]+' || echo "unknown")
+          YT_VER=$(curl -sL "https://www.apkmirror.com/apk/google-inc/youtube/" | grep -oP '/youtube/\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || echo "not found")
+          YTM_VER=$(curl -sL "https://www.apkmirror.com/apk/google-inc/youtube-music/" | grep -oP '/youtube-music/\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || echo "not found")
 
           echo "YT: $LAST_YT -> $YT_VER"
           echo "YTM: $LAST_YTM -> $YTM_VER"
