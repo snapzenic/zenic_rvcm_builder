@@ -119,7 +119,7 @@ jobs:
         run: |
           cd build || { echo "build folder not found"; exit 1; }
 
-          TG_CHAT="@zenicrvreminder"
+          TG_CHAT="@zenicgithubreminder"
           NL=$'\n'
           APKS=""
           MODULES=""
@@ -135,11 +135,11 @@ jobs:
           APKS=${APKS#"$NL"}
 
           BODY="$(sed 's/^\* \*\*/↪ \*\*/g; s/^\* `/↪ \*\*/g; s/`/\*/g; s/^\* /\↪/g; s/\*\*/\*/g; s/###//g; s/^- /↪ /g; /^==/d;' ../build.md)"
-          MSG="🆕 *New Zenic ReVanced Build - $RELEASE_DATE*
+          MSG="🆙 *New Zenic ReVanced Build\n $RELEASE_DATE*
 
           ${BODY}
 
-          *📥▼ Download Links:*
+          *📥 Download Links:*
           
           📦 Modules:
           
