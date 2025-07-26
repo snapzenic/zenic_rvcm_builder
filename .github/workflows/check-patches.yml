@@ -62,25 +62,32 @@ jobs:
         if: always()
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
-          TG_CHAT: "@zenicrvreminder"
+          TG_CHAT: "@zenicgithubreminder"
           UPDATE_VERSION: ${{ steps.should_build.outputs.UPDATE_CFG }}
           SHOULD_BUILD: ${{ steps.should_build.outputs.SHOULD_BUILD }}
           CHECK_DATE: ${{ steps.get_date.outputs.date }}
         run: |
+          escape() {
+            echo "$1" | sed 's/[.&()\[\]{}\-+!_>^=~|#`]/\\&/g'
+          }
+
+          ESCAPED_DATE=$(escape "$CHECK_DATE")
+          ESCAPED_VERSION=$(escape "$UPDATE_VERSION")
+
           if [ "$SHOULD_BUILD" = "1" ]; then
             if [ -z "$UPDATE_VERSION" ] || [ "$UPDATE_VERSION" = "unknown" ]; then
-              MESSAGE=$'✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared.\n\n🕛 Checked at: '"$CHECK_DATE"
+              MESSAGE=$'✅ *Update detected* in ReVanced patches for *Zenic RVCM Builder*\\. New build is being prepared\\.\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
             else
-              MESSAGE=$'✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared. Latest version: '"$UPDATE_VERSION"'\n\n🕛 Checked at: '"$CHECK_DATE"
+              MESSAGE=$'✅ *Update detected* in ReVanced patches for *Zenic RVCM Builder*\\. New build is being prepared\\.\n*Latest version:* `'"$ESCAPED_VERSION"'`\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
             fi
           else
-            MESSAGE=$'❌ No new updates, ReVanced patches are up to date.\n\n🕛 Checked at: '"$CHECK_DATE"
+            MESSAGE=$'❌ *No new updates*, ReVanced patches are up to date\\.\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
           fi
 
           curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             -d chat_id="${TG_CHAT}" \
             -d text="$MESSAGE" \
-            -d parse_mode="Markdown"
+            -d parse_mode="MarkdownV2"
 
       - name: Clear older runs
         env:
