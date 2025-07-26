@@ -65,15 +65,16 @@ jobs:
           TG_CHAT: "@zenicrvreminder"
           UPDATE_VERSION: ${{ steps.should_build.outputs.UPDATE_CFG }}
           SHOULD_BUILD: ${{ steps.should_build.outputs.SHOULD_BUILD }}
+          CHECK_DATE: ${{ steps.get_date.outputs.date }}
         run: |
           if [ "$SHOULD_BUILD" = "1" ]; then
             if [ -z "$UPDATE_VERSION" ] || [ "$UPDATE_VERSION" = "unknown" ]; then
-              MESSAGE="✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared."
+              MESSAGE=$'✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared.\n🕛 Checked at: '"$CHECK_DATE"
             else
-              MESSAGE="✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared. Latest version: $UPDATE_VERSION"
+              MESSAGE=$'✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared. Latest version: '"$UPDATE_VERSION"'\n🕛 Checked at: '"$CHECK_DATE"
             fi
           else
-            MESSAGE="❌ No new updates, ReVanced patches are up to date.\n 🕛 Checked at: ${{ steps.get_date.outputs.date }}"
+            MESSAGE=$'❌ No new updates, ReVanced patches are up to date.\n🕛 Checked at: '"$CHECK_DATE"
           fi
 
           curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
