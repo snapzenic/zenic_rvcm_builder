@@ -3,7 +3,7 @@ name: Check Updates
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */1 * * *"
+    - cron: "0 */4 * * *"
 
 jobs:
   check:
@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for YouTube/YT Music updates and patch updates
+      - name: Check for Patch updates
         id: should_build
         shell: bash
         env:
@@ -27,24 +27,7 @@ jobs:
         run: |
           SHOULD_BUILD=0
 
-          # Play Store sürüm kontrolü
-          mkdir -p .cache
-          [ -f .cache/last_versions.txt ] || echo "none none" > .cache/last_versions.txt
-          read LAST_YT LAST_YTM < .cache/last_versions.txt
-
-          YT_VER=$(curl -sL "https://www.apkmirror.com/apk/google-inc/youtube/" | grep -oP '/youtube/\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || echo "not found")
-          YTM_VER=$(curl -sL "https://www.apkmirror.com/apk/google-inc/youtube-music/" | grep -oP '/youtube-music/\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || echo "not found")
-
-          echo "YT: $LAST_YT -> $YT_VER"
-          echo "YTM: $LAST_YTM -> $YTM_VER"
-
-          if [[ "$YT_VER" != "$LAST_YT" || "$YTM_VER" != "$LAST_YTM" ]]; then
-            echo "App update detected"
-            echo "$YT_VER $YTM_VER" > .cache/last_versions.txt
-            SHOULD_BUILD=1
-          fi
-
-          # Patch/config güncelleme kontrolü
+          # Check Patch/config update
           if ! git checkout origin/update build.md; then
             echo "First time build!"
             SHOULD_BUILD=1
