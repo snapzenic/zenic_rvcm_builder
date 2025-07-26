@@ -1,0 +1,90 @@
+name: Check ReVanced Patch Updates
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    permissions: write-all
+    runs-on: ubuntu-latest
+
+    outputs:
+      SHOULD_BUILD: ${{ steps.should_build.outputs.SHOULD_BUILD }}
+      UPDATE_VERSION: ${{ steps.should_build.outputs.UPDATE_CFG }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Check for Patch updates
+        id: should_build
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHOULD_BUILD=0
+          UPDATE_CFG=""
+
+          # Check Patch/config update
+          if ! git checkout origin/update build.md; then
+            echo "First time build!"
+            SHOULD_BUILD=1
+            UPDATE_CFG="unknown"
+          else
+            UPDATE_CFG=$(./build.sh config.toml --config-update)
+            if [ -n "$UPDATE_CFG" ]; then
+              echo "Patch/config update detected: $UPDATE_CFG"
+              SHOULD_BUILD=1
+            fi
+          fi
+
+          echo "SHOULD_BUILD=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+          echo "UPDATE_CFG=$UPDATE_CFG" >> $GITHUB_OUTPUT
+
+      - name: Commit version cache if needed
+        if: steps.should_build.outputs.SHOULD_BUILD == '1'
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+          git add .cache/last_versions.txt
+          git commit -m "Update last checked YouTube app versions"
+          git push
+
+      - name: Send Telegram notification
+        if: always()
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT: "@zenicrvreminder"
+          UPDATE_VERSION: ${{ steps.should_build.outputs.UPDATE_CFG }}
+          SHOULD_BUILD: ${{ steps.should_build.outputs.SHOULD_BUILD }}
+        run: |
+          if [ "$SHOULD_BUILD" = "1" ]; then
+            if [ -z "$UPDATE_VERSION" ] || [ "$UPDATE_VERSION" = "unknown" ]; then
+              MESSAGE="✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared."
+            else
+              MESSAGE="✅ Update detected in ReVanced patches for Zenic RVCM Builder. New build is being prepared. Latest version: $UPDATE_VERSION"
+            fi
+          else
+            MESSAGE="❌ No new updates, ReVanced patches are up to date."
+          fi
+
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d chat_id="${TG_CHAT}" \
+            -d text="$MESSAGE" \
+            -d parse_mode="Markdown"
+
+      - name: Clear older runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list -L400 --json databaseId -q '.[].databaseId' | tail -n+10 | xargs -IID gh api "repos/$GITHUB_REPOSITORY/actions/runs/ID" -X DELETE || :
+
+  build:
+    permissions: write-all
+    needs: check
+    if: ${{ needs.check.outputs.SHOULD_BUILD == '1' }}
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
