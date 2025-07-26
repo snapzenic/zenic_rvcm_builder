@@ -76,12 +76,12 @@ jobs:
 
           if [ "$SHOULD_BUILD" = "1" ]; then
             if [ -z "$UPDATE_VERSION" ] || [ "$UPDATE_VERSION" = "unknown" ]; then
-              MESSAGE=$'✅ *Update detected* in ReVanced patches for *Zenic RVCM Builder*\\. New build is being prepared\\.\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
+              MESSAGE=$'⚠️ *Update detected* in ReVanced patches for *Zenic RVCM Builder*\\. New build is being prepared\\.\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
             else
-              MESSAGE=$'✅ *Update detected* in ReVanced patches for *Zenic RVCM Builder*\\. New build is being prepared\\.\n*Latest version:* `'"$ESCAPED_VERSION"'`\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
+              MESSAGE=$'⚠️ *Update detected* in ReVanced patches for *Zenic RVCM Builder*\\. New build is being prepared\\.\n*Latest version:* `'"$ESCAPED_VERSION"'`\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
             fi
           else
-            MESSAGE=$'❌ *No new updates*, ReVanced patches are up to date\\.\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
+            MESSAGE=$'⛔ *No new updates*, ReVanced patches are up to date\\.\n\n🕛 *Checked at:* `'"$ESCAPED_DATE"'`'
           fi
 
           curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
