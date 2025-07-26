@@ -112,10 +112,10 @@ jobs:
           commit_message: Bump version ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}
 
       - name: Send Telegram notification
-        if: env.TG_TOKEN != null
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           RELEASE_DATE: ${{ steps.get_date.outputs.date }}
+        if: env.TG_TOKEN != null
         run: |
           cd build || { echo "build folder not found"; exit 1; }
 
@@ -123,10 +123,9 @@ jobs:
           NL=$'\n'
 
           escape_markdown_v2() {
-            echo "$1" | sed -e 's/\\/\\\\/g' -e 's/\*/\\*/g' -e 's/_/\\_/g' -e 's/\[/\\[/g' -e 's/\]/\\]/g' \
-                             -e 's/(/\\(/g' -e 's/)/\\)/g' -e 's/~/\\~/g' -e 's/`/\\`/g' -e 's/>/\\>/g' \
-                             -e 's/#/\\#/g' -e 's/\+/\\+/g' -e 's/-/\\-/g' -e 's/=/\\=/g' -e 's/\|/\\|/g' \
-                             -e 's/{/\\{/g' -e 's/}/\\}/g' -e 's/\./\\./g' -e 's/!/\\!/g'
+            echo "$1" | sed -E \
+              -e 's/([!#(){}\[\]\-+_=\|~`>.\$*])|([\\])/\\\1/g' \
+              -e 's/([<>&])/\\\1/g'
           }
 
           APKS=""
@@ -134,17 +133,17 @@ jobs:
           for OUTPUT in *; do
             DL_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}/${OUTPUT}"
             SAFE_OUTPUT=$(escape_markdown_v2 "$OUTPUT")
+            SAFE_URL=$(escape_markdown_v2 "$DL_URL")
             if [[ $OUTPUT = *.apk ]]; then
-              APKS+="${NL}📦 \[${SAFE_OUTPUT}\]\(${DL_URL}\)"
+              APKS+="${NL}📦 [${SAFE_OUTPUT}](${SAFE_URL})"
             elif [[ $OUTPUT = *.zip ]]; then
-              MODULES+="${NL}📦 \[${SAFE_OUTPUT}\]\(${DL_URL}\)"
+              MODULES+="${NL}📦 [${SAFE_OUTPUT}](${SAFE_URL})"
             fi
           done
-
           MODULES=${MODULES#"$NL"}
           APKS=${APKS#"$NL"}
 
-          BODY=$(sed \
+          BODY="$(sed \
             -e 's/^\* \*\*/• */g' \
             -e 's/^\* `/• `/g' \
             -e 's/\*\*/\*/g' \
@@ -156,12 +155,15 @@ jobs:
             -e 's/(/\\(/g' \
             -e 's/)/\\)/g' \
             -e 's/\./\\./g' \
-            -e '/^==/d' ../build.md)
+            -e 's/\-/\\-/g' \
+            -e '/^==/d' \
+            ../build.md)"
 
           SAFE_DATE=$(escape_markdown_v2 "$RELEASE_DATE")
 
           MSG="🆙 *New Zenic ReVanced Build*\n\`${SAFE_DATE}\`\n\n${BODY}\n\n*📥 Download Links:*\n\n📦 *Modules:*\n${MODULES}\n\n📱 *APKs:*\n${APKS}"
 
+          echo "'$MSG'"
           MSG=${MSG:0:3900}
 
           curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
